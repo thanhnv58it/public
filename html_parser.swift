@@ -17,17 +17,18 @@ func parseHTMLString(_ htmlString: String) -> HTMLStringData {
     var bTags = [String]()
     var lists = [[String]]()
 
-    // Regular expression for <a> tags
-    let aTagPattern = "<a\\s+(?:[^>]*?\\s+)?href=[\"']([^\"']*)[\"'][^>]*>(.*?)<\\/a>"
+    // Regular expression for <a> tags with optional href attribute
+    let aTagPattern = "<a(?:\\s+href=[\"']([^\"']*)[\"'])?[^>]*>(.*?)<\\/a>"
     if let aTagRegex = try? NSRegularExpression(pattern: aTagPattern, options: []) {
         let matches = aTagRegex.matches(in: htmlString, options: [], range: NSRange(location: 0, length: htmlString.utf16.count))
         for match in matches {
-            if let hrefRange = Range(match.range(at: 1), in: htmlString),
-               let textRange = Range(match.range(at: 2), in: htmlString) {
-                let href = String(htmlString[hrefRange])
-                let text = String(htmlString[textRange])
-                aTags.append(LinkData(text: text, href: href))
-            }
+            let hrefRange = Range(match.range(at: 1), in: htmlString)
+            let textRange = Range(match.range(at: 2), in: htmlString)
+            
+            let href = hrefRange.map { String(htmlString[$0]) }
+            let text = textRange.map { String(htmlString[$0]) } ?? ""
+            
+            aTags.append(LinkData(text: text, href: href))
         }
     }
 
@@ -87,7 +88,11 @@ This is the list of drinks
   <li>Tea</li>
   <li>Milk</li>
 </ul>
-<a href="http://example.com">html</a> <b>tag</b> and <b>other tags</b>
+<a href="http://example.com">html</a>
+<a>link without href</a>
+<b>tag</b>
+and
+<b>other tags</b>
 """
 
 let parsedData = parseHTMLString(htmlString)
